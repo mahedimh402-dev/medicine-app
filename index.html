@@ -1,16 +1,108 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>Medicine Interaction Checker</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        input {
+            padding: 10px;
+            width: 250px;
+            margin: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        #suggestions1, #suggestions2 {
+            border: 1px solid #ccc;
+            max-width: 250px;
+            margin: auto;
+            text-align: left;
+            background: white;
+            position: relative;
+        }
+
+        .suggest-item {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .suggest-item:hover {
+            background-color: #eee;
+        }
+
+    </style>
+</head>
+
 <body>
 
-<h2>Medicine Interaction Checker</h2>
+    <h2>💊 Medicine Interaction Checker</h2>
 
-<form method="POST">
-    <input type="text" name="med1" placeholder="Medicine 1"><br><br>
-    <input type="text" name="med2" placeholder="Medicine 2"><br><br>
-    <button type="submit">Check</button>
-</form>
+    <input type="text" id="med1" placeholder="Enter first medicine" onkeyup="getSuggestions(1)">
+    <div id="suggestions1"></div>
 
-<h3>{{ result }}</h3>
+    <br>
+
+    <input type="text" id="med2" placeholder="Enter second medicine" onkeyup="getSuggestions(2)">
+    <div id="suggestions2"></div>
+
+    <br>
+
+    <button onclick="checkInteraction()">Check Interaction</button>
+
+    <h3 id="result"></h3>
+
+    <script>
+        function getSuggestions(box) {
+            let query = document.getElementById(box === 1 ? "med1" : "med2").value;
+
+            if (query.length === 0) {
+                document.getElementById(box === 1 ? "suggestions1" : "suggestions2").innerHTML = "";
+                return;
+            }
+
+            fetch(`/suggest?q=${query}`)
+                .then(res => res.json())
+                .then(data => {
+                    let html = "";
+                    data.forEach(item => {
+                        html += `<div class="suggest-item" onclick="selectMedicine(${box}, '${item}')">${item}</div>`;
+                    });
+
+                    document.getElementById(box === 1 ? "suggestions1" : "suggestions2").innerHTML = html;
+                });
+        }
+
+        function selectMedicine(box, value) {
+            document.getElementById(box === 1 ? "med1" : "med2").value = value;
+            document.getElementById(box === 1 ? "suggestions1" : "suggestions2").innerHTML = "";
+        }
+
+        function checkInteraction() {
+            let med1 = document.getElementById("med1").value;
+            let med2 = document.getElementById("med2").value;
+
+            fetch("/check", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ med1: med1, med2: med2 })
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById("result").innerText = data.result;
+            });
+        }
+    </script>
 
 </body>
 </html>
