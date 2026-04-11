@@ -1,6 +1,6 @@
 Combination (Generic A + Generic B),Result,Reasoning / Warning
-Paracetamol + Paracetamol,Unsafe,"Therapeutic Duplication: Both contain Paracetamol. High risk of toxic overdose (e.g., Napa + Ace)."
-Paracetamol + Paracetamol + Caffeine,Safe,No high-risk chemical interaction documented for this combination.
+Paracetamol + Paracetamol,Unsafe,"Therapeutic Duplication: Both contain Paracetamol. High risk of toxic overdose."
+Paracetamol + Paracetamol + Caffeine,Unsafe,"Therapeutic Duplication: Both contain Paracetamol. High risk of toxic overdose."
 Paracetamol + Flunarizine,Safe,No high-risk chemical interaction documented for this combination.
 Paracetamol + Tolfenamic Acid,Safe,No high-risk chemical interaction documented for this combination.
 Paracetamol + Fexofenadine,Safe,No high-risk chemical interaction documented for this combination.
