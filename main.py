@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import csv
 import re
 from itertools import combinations
+from fuzzywuzzy import process
 
 app = Flask(__name__)
 
@@ -46,14 +47,30 @@ with open("Drug_Interaction_Results_Bangladesh.csv", newline='', encoding='utf-8
                 pair_interactions[(clean(g2), clean(g1))] = result
 
 # -----------------------------
+# AUTO CORRECTION FUNCTION
+# -----------------------------
+def correct_medicine(name):
+    name = clean(name)
+
+    if name in medicine_list:
+        return name
+
+    match, score = process.extractOne(name, medicine_list)
+
+    if score >= 75:
+        return match
+
+    return None
+
+# -----------------------------
 # CHECK FUNCTION
 # -----------------------------
 def check_interaction(med1, med2):
-    g1 = mapping.get(clean(med1))
-    g2 = mapping.get(clean(med2))
+    g1 = correct_medicine(med1)
+    g2 = correct_medicine(med2)
 
     if not g1 or not g2:
-        return "❌ Medicine not found in database"
+        return "❌ Medicine not found. Check spelling."
 
     if (g1, g2) in pair_interactions:
         return f"⚠️ {pair_interactions[(g1, g2)]}"
