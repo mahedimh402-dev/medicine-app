@@ -7,13 +7,13 @@ from fuzzywuzzy import process
 app = Flask(__name__)
 
 # -----------------------------
-# CLEAN FUNCTION
+# CLEAN TEXT
 # -----------------------------
 def clean(text):
     return re.sub(r"\s+", " ", text.lower().strip())
 
 # -----------------------------
-# LOAD BRAND → GENERIC
+# LOAD BRAND → GENERIC MAP
 # -----------------------------
 mapping = {}
 
@@ -29,7 +29,7 @@ with open("Bangladesh Drug Brands & Interactions - Bangladesh Drug Brands & Inte
 medicine_list = list(mapping.keys())
 
 # -----------------------------
-# LOAD INTERACTIONS
+# LOAD INTERACTIONS (FIXED)
 # -----------------------------
 pair_interactions = {}
 
@@ -39,15 +39,20 @@ with open("Drug_Interaction_Results_Bangladesh.csv", newline='', encoding='utf-8
         combo = clean(row["Combination (Generic A + Generic B)"])
         result = row["Result"]
 
-        parts = combo.split("+")
+        parts = re.split(r"\+|and|,|/", combo)
+        parts = [clean(p) for p in parts if p.strip()]
 
         if len(parts) >= 2:
-            for g1, g2 in combinations(parts, 2):
-                pair_interactions[(clean(g1), clean(g2))] = result
-                pair_interactions[(clean(g2), clean(g1))] = result
+            for i in range(len(parts)):
+                for j in range(i + 1, len(parts)):
+                    g1 = parts[i]
+                    g2 = parts[j]
+
+                    pair_interactions[(g1, g2)] = result
+                    pair_interactions[(g2, g1)] = result
 
 # -----------------------------
-# AUTO CORRECTION FUNCTION
+# AUTO CORRECTION
 # -----------------------------
 def correct_medicine(name):
     name = clean(name)
@@ -63,14 +68,14 @@ def correct_medicine(name):
     return None
 
 # -----------------------------
-# CHECK FUNCTION
+# CHECK INTERACTION
 # -----------------------------
 def check_interaction(med1, med2):
     g1 = correct_medicine(med1)
     g2 = correct_medicine(med2)
 
     if not g1 or not g2:
-        return "❌ Medicine not found. Check spelling."
+        return "❌ Medicine not found"
 
     if (g1, g2) in pair_interactions:
         return f"⚠️ {pair_interactions[(g1, g2)]}"
