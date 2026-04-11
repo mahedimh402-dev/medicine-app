@@ -2,18 +2,17 @@ from flask import Flask, render_template, request, jsonify
 import csv
 import re
 from itertools import combinations
-from fuzzywuzzy import process
 
 app = Flask(__name__)
 
 # -----------------------------
-# CLEAN TEXT
+# CLEAN FUNCTION
 # -----------------------------
 def clean(text):
     return re.sub(r"\s+", " ", text.lower().strip())
 
 # -----------------------------
-# LOAD BRAND → GENERIC MAP
+# LOAD BRAND → GENERIC
 # -----------------------------
 mapping = {}
 
@@ -29,7 +28,7 @@ with open("Bangladesh Drug Brands & Interactions - Bangladesh Drug Brands & Inte
 medicine_list = list(mapping.keys())
 
 # -----------------------------
-# LOAD INTERACTIONS (FIXED)
+# LOAD INTERACTIONS (FIXED ONLY MINIMAL CHANGE)
 # -----------------------------
 pair_interactions = {}
 
@@ -39,43 +38,25 @@ with open("Drug_Interaction_Results_Bangladesh.csv", newline='', encoding='utf-8
         combo = clean(row["Combination (Generic A + Generic B)"])
         result = row["Result"]
 
-        parts = re.split(r"\+|and|,|/", combo)
-        parts = [clean(p) for p in parts if p.strip()]
+        # KEEP SIMPLE SPLIT (IMPORTANT FIX)
+        parts = [p.strip() for p in combo.split("+")]
 
         if len(parts) >= 2:
-            for i in range(len(parts)):
-                for j in range(i + 1, len(parts)):
-                    g1 = parts[i]
-                    g2 = parts[j]
+            g1 = clean(parts[0])
+            g2 = clean(parts[1])
 
-                    pair_interactions[(g1, g2)] = result
-                    pair_interactions[(g2, g1)] = result
+            pair_interactions[(g1, g2)] = result
+            pair_interactions[(g2, g1)] = result
 
 # -----------------------------
-# AUTO CORRECTION
-# -----------------------------
-def correct_medicine(name):
-    name = clean(name)
-
-    if name in medicine_list:
-        return name
-
-    match, score = process.extractOne(name, medicine_list)
-
-    if score >= 75:
-        return match
-
-    return None
-
-# -----------------------------
-# CHECK INTERACTION
+# CHECK FUNCTION (SAME LOGIC)
 # -----------------------------
 def check_interaction(med1, med2):
-    g1 = correct_medicine(med1)
-    g2 = correct_medicine(med2)
+    g1 = mapping.get(clean(med1))
+    g2 = mapping.get(clean(med2))
 
     if not g1 or not g2:
-        return "❌ Medicine not found"
+        return "❌ Medicine not found in database"
 
     if (g1, g2) in pair_interactions:
         return f"⚠️ {pair_interactions[(g1, g2)]}"
