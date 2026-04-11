@@ -1,13 +1,9 @@
 from flask import Flask, render_template, request, jsonify
 import csv
 import re
-from itertools import combinations
 
 app = Flask(__name__)
 
-# -----------------------------
-# CLEAN FUNCTION
-# -----------------------------
 def clean(text):
     return re.sub(r"\s+", " ", text.lower().strip())
 
@@ -28,7 +24,7 @@ with open("Bangladesh Drug Brands & Interactions - Bangladesh Drug Brands & Inte
 medicine_list = list(mapping.keys())
 
 # -----------------------------
-# LOAD INTERACTIONS (FIXED ONLY MINIMAL CHANGE)
+# LOAD INTERACTIONS (SIMPLE & STABLE)
 # -----------------------------
 pair_interactions = {}
 
@@ -38,25 +34,25 @@ with open("Drug_Interaction_Results_Bangladesh.csv", newline='', encoding='utf-8
         combo = clean(row["Combination (Generic A + Generic B)"])
         result = row["Result"]
 
-        # KEEP SIMPLE SPLIT (IMPORTANT FIX)
-        parts = [p.strip() for p in combo.split("+")]
+        parts = combo.split("+")
+        parts = [clean(p) for p in parts]
 
         if len(parts) >= 2:
-            g1 = clean(parts[0])
-            g2 = clean(parts[1])
+            g1 = parts[0]
+            g2 = parts[1]
 
             pair_interactions[(g1, g2)] = result
             pair_interactions[(g2, g1)] = result
 
 # -----------------------------
-# CHECK FUNCTION (SAME LOGIC)
+# CHECK FUNCTION
 # -----------------------------
 def check_interaction(med1, med2):
     g1 = mapping.get(clean(med1))
     g2 = mapping.get(clean(med2))
 
     if not g1 or not g2:
-        return "❌ Medicine not found in database"
+        return "❌ Medicine not found"
 
     if (g1, g2) in pair_interactions:
         return f"⚠️ {pair_interactions[(g1, g2)]}"
@@ -73,20 +69,12 @@ def home():
 @app.route("/check", methods=["POST"])
 def check():
     data = request.get_json()
-    med1 = data.get("med1")
-    med2 = data.get("med2")
-
-    result = check_interaction(med1, med2)
-    return jsonify({"result": result})
+    return jsonify({"result": check_interaction(data["med1"], data["med2"])})
 
 @app.route("/suggest")
 def suggest():
     query = request.args.get("q", "").lower()
-    suggestions = [m for m in medicine_list if query in m]
-    return jsonify(suggestions[:5])
+    return jsonify([m for m in medicine_list if query in m][:5])
 
-# -----------------------------
-# RUN
-# -----------------------------
 if __name__ == "__main__":
     app.run()
