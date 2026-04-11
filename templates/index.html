@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Medicine Interaction Checker</title>
+    <title>Medicine Checker</title>
 
     <style>
         body {
@@ -47,9 +47,9 @@
         .suggestions {
             text-align: left;
             border: 1px solid #ddd;
+            background: white;
             max-height: 120px;
             overflow-y: auto;
-            background: white;
         }
 
         .suggestions div {
@@ -107,7 +107,6 @@ function suggest(box){
 function selectMed(box, val){
     document.getElementById(box==1?"med1":"med2").value = val;
     document.getElementById(box==1?"s1":"s2").innerHTML = "";
-    document.getElementById(box==2?"s2":"s1").innerHTML = "";
 }
 
 function check(){
