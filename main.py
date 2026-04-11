@@ -91,7 +91,7 @@ def check_interaction(med1, med2):
 # -----------------------------
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return "VERSION 999 WORKING"
 
 @app.route("/check", methods=["POST"])
 def check():
