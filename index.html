@@ -1,108 +1,122 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Medicine Interaction Checker</title>
+    <title>Medicine Checker</title>
 
     <style>
         body {
-            font-family: Arial;
+            font-family: 'Segoe UI';
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 350px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             text-align: center;
-            margin-top: 50px;
         }
 
         input {
-            padding: 10px;
-            width: 250px;
-            margin: 10px;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
         }
 
         button {
-            padding: 10px 20px;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            background: #4facfe;
+            color: white;
+            border-radius: 8px;
             cursor: pointer;
         }
 
-        #suggestions1, #suggestions2 {
-            border: 1px solid #ccc;
-            max-width: 250px;
-            margin: auto;
-            text-align: left;
-            background: white;
-            position: relative;
+        button:hover {
+            background: #3a8dde;
         }
 
-        .suggest-item {
+        .suggestions {
+            background: white;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+
+        .suggestions div {
             padding: 8px;
             cursor: pointer;
         }
 
-        .suggest-item:hover {
-            background-color: #eee;
+        .suggestions div:hover {
+            background: #eee;
         }
 
+        .result {
+            margin-top: 15px;
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body>
 
-    <h2>💊 Medicine Interaction Checker</h2>
+<div class="card">
+    <h2>💊 Medicine Checker</h2>
 
-    <input type="text" id="med1" placeholder="Enter first medicine" onkeyup="getSuggestions(1)">
-    <div id="suggestions1"></div>
+    <input id="med1" placeholder="First medicine" onkeyup="suggest(1)">
+    <div id="s1" class="suggestions"></div>
 
-    <br>
+    <input id="med2" placeholder="Second medicine" onkeyup="suggest(2)">
+    <div id="s2" class="suggestions"></div>
 
-    <input type="text" id="med2" placeholder="Enter second medicine" onkeyup="getSuggestions(2)">
-    <div id="suggestions2"></div>
+    <button onclick="check()">Check</button>
 
-    <br>
+    <div class="result" id="result"></div>
+</div>
 
-    <button onclick="checkInteraction()">Check Interaction</button>
+<script>
+function suggest(box){
+    let val = document.getElementById(box==1?"med1":"med2").value;
 
-    <h3 id="result"></h3>
+    fetch("/suggest?q="+val)
+    .then(res=>res.json())
+    .then(data=>{
+        let html="";
+        data.forEach(d=>{
+            html+=`<div onclick="select(${box}, '${d}')">${d}</div>`;
+        });
+        document.getElementById(box==1?"s1":"s2").innerHTML=html;
+    });
+}
 
-    <script>
-        function getSuggestions(box) {
-            let query = document.getElementById(box === 1 ? "med1" : "med2").value;
+function select(box,val){
+    document.getElementById(box==1?"med1":"med2").value=val;
+    document.getElementById(box==1?"s1":"s2").innerHTML="";
+}
 
-            if (query.length === 0) {
-                document.getElementById(box === 1 ? "suggestions1" : "suggestions2").innerHTML = "";
-                return;
-            }
+function check(){
+    let m1=document.getElementById("med1").value;
+    let m2=document.getElementById("med2").value;
 
-            fetch(`/suggest?q=${query}`)
-                .then(res => res.json())
-                .then(data => {
-                    let html = "";
-                    data.forEach(item => {
-                        html += `<div class="suggest-item" onclick="selectMedicine(${box}, '${item}')">${item}</div>`;
-                    });
-
-                    document.getElementById(box === 1 ? "suggestions1" : "suggestions2").innerHTML = html;
-                });
-        }
-
-        function selectMedicine(box, value) {
-            document.getElementById(box === 1 ? "med1" : "med2").value = value;
-            document.getElementById(box === 1 ? "suggestions1" : "suggestions2").innerHTML = "";
-        }
-
-        function checkInteraction() {
-            let med1 = document.getElementById("med1").value;
-            let med2 = document.getElementById("med2").value;
-
-            fetch("/check", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ med1: med1, med2: med2 })
-            })
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById("result").innerText = data.result;
-            });
-        }
-    </script>
+    fetch("/check",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({med1:m1,med2:m2})
+    })
+    .then(res=>res.json())
+    .then(data=>{
+        document.getElementById("result").innerText=data.result;
+    });
+}
+</script>
 
 </body>
 </html>
