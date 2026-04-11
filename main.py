@@ -12,32 +12,6 @@ def clean(text):
     return re.sub(r"\s+", " ", text.lower().strip())
 
 # -----------------------------
-# SMART SPLIT
-# -----------------------------
-def smart_split(combo):
-    combo = combo.lower()
-    parts = []
-    current = ""
-    bracket = 0
-
-    for c in combo:
-        if c == "(":
-            bracket += 1
-        elif c == ")":
-            bracket -= 1
-
-        if c == "+" and bracket == 0:
-            parts.append(current.strip())
-            current = ""
-        else:
-            current += c
-
-    if current:
-        parts.append(current.strip())
-
-    return [clean(p) for p in parts]
-
-# -----------------------------
 # LOAD BRAND → GENERIC
 # -----------------------------
 mapping = {}
@@ -64,12 +38,12 @@ with open("Drug_Interaction_Results_Bangladesh.csv", newline='', encoding='utf-8
         combo = clean(row["Combination (Generic A + Generic B)"])
         result = row["Result"]
 
-        parts = smart_split(combo)
+        parts = combo.split("+")
 
         if len(parts) >= 2:
             for g1, g2 in combinations(parts, 2):
-                pair_interactions[(g1, g2)] = result
-                pair_interactions[(g2, g1)] = result
+                pair_interactions[(clean(g1), clean(g2))] = result
+                pair_interactions[(clean(g2), clean(g1))] = result
 
 # -----------------------------
 # CHECK FUNCTION
@@ -79,7 +53,7 @@ def check_interaction(med1, med2):
     g2 = mapping.get(clean(med2))
 
     if not g1 or not g2:
-        return "❌ Medicine not found"
+        return "❌ Medicine not found in database"
 
     if (g1, g2) in pair_interactions:
         return f"⚠️ {pair_interactions[(g1, g2)]}"
@@ -91,7 +65,7 @@ def check_interaction(med1, med2):
 # -----------------------------
 @app.route("/")
 def home():
-    return "VERSION 999 WORKING"
+    return render_template("index.html")
 
 @app.route("/check", methods=["POST"])
 def check():
