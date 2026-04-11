@@ -1,66 +1,130 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Medicine Interaction Checker</title>
+
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            text-align: center;
-            padding: 40px;
+            font-family: Arial;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        .container {
+        .card {
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            width: 400px;
-            margin: auto;
-            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            width: 350px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
         }
 
         input {
-            width: 90%;
-            padding: 10px;
+            width: 100%;
+            padding: 12px;
             margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
         }
 
         button {
-            padding: 10px 20px;
-            background-color: #28a745;
-            color: white;
+            width: 100%;
+            padding: 12px;
             border: none;
+            background: #4facfe;
+            color: white;
+            border-radius: 8px;
             cursor: pointer;
         }
 
         button:hover {
-            background-color: #218838;
+            background: #3a8dde;
+        }
+
+        .suggestions {
+            text-align: left;
+            border: 1px solid #ddd;
+            max-height: 120px;
+            overflow-y: auto;
+            background: white;
+        }
+
+        .suggestions div {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .suggestions div:hover {
+            background: #eee;
         }
 
         .result {
-            margin-top: 20px;
+            margin-top: 15px;
             font-weight: bold;
         }
     </style>
 </head>
+
 <body>
 
-<div class="container">
-    <h2>💊 Medicine Interaction Checker</h2>
+<div class="card">
+    <h2>💊 Medicine Checker</h2>
 
-    <form method="POST">
-        <input type="text" name="med1" placeholder="Enter first medicine" required><br>
-        <input type="text" name="med2" placeholder="Enter second medicine" required><br>
-        <button type="submit">Check Interaction</button>
-    </form>
+    <input id="med1" placeholder="First medicine" onkeyup="suggest(1)">
+    <div id="s1" class="suggestions"></div>
 
-    {% if result %}
-        <div class="result">
-            <p>{{ result|safe }}</p>
-        </div>
-    {% endif %}
+    <input id="med2" placeholder="Second medicine" onkeyup="suggest(2)">
+    <div id="s2" class="suggestions"></div>
+
+    <button onclick="check()">Check Interaction</button>
+
+    <div class="result" id="result"></div>
 </div>
+
+<script>
+function suggest(box){
+    let val = document.getElementById(box==1?"med1":"med2").value;
+
+    if(val.length === 0){
+        document.getElementById(box==1?"s1":"s2").innerHTML = "";
+        return;
+    }
+
+    fetch("/suggest?q=" + val)
+    .then(res => res.json())
+    .then(data => {
+        let html = "";
+        data.forEach(d => {
+            html += `<div onclick="selectMed(${box}, '${d}')">${d}</div>`;
+        });
+        document.getElementById(box==1?"s1":"s2").innerHTML = html;
+    });
+}
+
+function selectMed(box, val){
+    document.getElementById(box==1?"med1":"med2").value = val;
+    document.getElementById(box==1?"s1":"s2").innerHTML = "";
+    document.getElementById(box==2?"s2":"s1").innerHTML = "";
+}
+
+function check(){
+    let m1 = document.getElementById("med1").value;
+    let m2 = document.getElementById("med2").value;
+
+    fetch("/check", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({med1:m1, med2:m2})
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("result").innerText = data.result;
+    });
+}
+</script>
 
 </body>
 </html>
