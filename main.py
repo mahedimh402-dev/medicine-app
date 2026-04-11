@@ -1,101 +1,86 @@
 from flask import Flask, render_template, request, jsonify
 import csv
-import difflib
+import re
+from itertools import combinations
 
 app = Flask(__name__)
 
 # -----------------------------
-# LOAD DATA
+# CLEAN FUNCTION
 # -----------------------------
-brand_to_generic = {}
-interactions = {}
-medicine_list = []
+def clean(text):
+    return re.sub(r"\s+", " ", text.lower().strip())
 
-with open("brand_generic_interactions.csv", newline='', encoding='utf-8') as file:
+# -----------------------------
+# LOAD BRAND → GENERIC
+# -----------------------------
+mapping = {}
+
+with open("Bangladesh Drug Brands & Interactions - Bangladesh Drug Brands & Interactions.csv", newline='', encoding='utf-8') as file:
     reader = csv.DictReader(file)
     for row in reader:
-        brand = row["Brand Name"].strip().lower()
-        generic = row["Generic Name"].strip().lower()
-        medicine_list.append(brand)
-        brand_to_generic[brand] = generic
+        generic = clean(row["Generic Name"])
+        brands = row["Popular Brand Names (Major Manufacturers)"].split(",")
 
-# Remove duplicates
-medicine_list = list(set(medicine_list))
+        for brand in brands:
+            mapping[clean(brand)] = generic
 
-# Load interaction pairs (you must have Drug1, Drug2, Severity)
-with open("drug_interactions.csv", newline='', encoding='utf-8') as file:
+medicine_list = list(mapping.keys())
+
+# -----------------------------
+# LOAD INTERACTIONS
+# -----------------------------
+pair_interactions = {}
+
+with open("Drug_Interaction_Results_Bangladesh.csv", newline='', encoding='utf-8') as file:
     reader = csv.DictReader(file)
     for row in reader:
-        d1 = row["Drug1"].strip().lower()
-        d2 = row["Drug2"].strip().lower()
-        severity = row["Severity"].strip().lower()
+        d1 = clean(row["Drug1"])
+        d2 = clean(row["Drug2"])
+        result = row["Result"]
 
-        interactions[(d1, d2)] = severity
-        interactions[(d2, d1)] = severity
-
+        pair_interactions[(d1, d2)] = result
+        pair_interactions[(d2, d1)] = result
 
 # -----------------------------
-# SPELL CORRECTION
+# CHECK FUNCTION
 # -----------------------------
-def correct_name(name):
-    matches = difflib.get_close_matches(name.lower(), medicine_list, n=1, cutoff=0.5)
-    return matches[0] if matches else name.lower()
+def check_interaction(med1, med2):
+    g1 = mapping.get(clean(med1))
+    g2 = mapping.get(clean(med2))
 
+    if not g1 or not g2:
+        return "❌ Medicine not found"
+
+    if (g1, g2) in pair_interactions:
+        return f"⚠️ {pair_interactions[(g1, g2)]}"
+
+    return "✅ No interaction found"
 
 # -----------------------------
 # ROUTES
 # -----------------------------
-@app.route('/')
+@app.route("/")
 def home():
-    return render_template('index.html')
+    return render_template("index.html")
 
-
-@app.route('/suggest')
-def suggest():
-    query = request.args.get('q', '').lower()
-    suggestions = [m for m in medicine_list if query in m][:5]
-    return jsonify(suggestions)
-
-
-@app.route('/check', methods=['POST'])
+@app.route("/check", methods=["POST"])
 def check():
-    med1 = request.form['med1']
-    med2 = request.form['med2']
+    data = request.get_json()
+    med1 = data.get("med1")
+    med2 = data.get("med2")
 
-    # Spell correction
-    med1_corrected = correct_name(med1)
-    med2_corrected = correct_name(med2)
+    result = check_interaction(med1, med2)
+    return jsonify({"result": result})
 
-    gen1 = brand_to_generic.get(med1_corrected)
-    gen2 = brand_to_generic.get(med2_corrected)
+@app.route("/suggest")
+def suggest():
+    query = request.args.get("q", "").lower()
+    suggestions = [m for m in medicine_list if query in m]
+    return jsonify(suggestions[:5])
 
-    if not gen1 or not gen2:
-        return render_template('index.html',
-                               result="❌ Medicine not found",
-                               color="gray")
-
-    # Check interaction
-    severity = interactions.get((gen1, gen2))
-
-    if severity == "high":
-        result = f"🔴 HIGH RISK interaction between {gen1} and {gen2}"
-        color = "red"
-    elif severity == "moderate":
-        result = f"🟡 MODERATE interaction between {gen1} and {gen2}"
-        color = "orange"
-    elif severity == "low":
-        result = f"🟢 LOW interaction between {gen1} and {gen2}"
-        color = "green"
-    else:
-        result = f"🟢 No known interaction between {gen1} and {gen2}"
-        color = "green"
-
-    return render_template('index.html',
-                           result=result,
-                           color=color,
-                           med1=med1_corrected,
-                           med2=med2_corrected)
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
+# -----------------------------
+# RUN
+# -----------------------------
+if __name__ == "__main__":
+    app.run()
