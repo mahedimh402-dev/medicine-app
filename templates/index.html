@@ -64,6 +64,7 @@
         .result {
             margin-top: 15px;
             font-weight: bold;
+            color: black;
         }
 
         .warning {
@@ -94,7 +95,6 @@
 
     <div class="result" id="result"></div>
 
-    <!-- Ethical warning -->
     <div class="warning">
         ⚠️ This tool is for educational purposes only. Consult a doctor.
     </div>
@@ -140,11 +140,15 @@ function check(){
 
         resultBox.innerText = data.result;
 
-        // 🔥 COLOR LOGIC ADDED
-        if(data.result.includes("⚠️")){
+        // 🔴 Only unsafe/caution = RED
+        if(
+            data.result.includes("⚠️") ||
+            data.result.toLowerCase().includes("unsafe") ||
+            data.result.toLowerCase().includes("severe")
+        ){
             resultBox.style.color = "red";
         } else {
-            resultBox.style.color = "green";
+            resultBox.style.color = "black";
         }
     });
 }
