@@ -65,18 +65,24 @@
             margin-top: 15px;
             font-weight: bold;
         }
+
+        .warning {
+            font-size: 12px;
+            color: red;
+            margin-top: 10px;
+        }
     </style>
 </head>
 
 <body>
 
 <div class="card">
-    <h2>💊 Medicine Checker</h2>
+    <h2>💊 Medicine Interaction Checker</h2>
     
     <p style="font-size:14px;color:#555;margin-bottom:15px;">
-In Bangladesh, self-medication is common, which can lead to dangerous drug interactions. 
-This system helps users identify risks and improve patient safety.
-</p>
+    In Bangladesh, self-medication is common, which can lead to dangerous drug interactions. 
+    This system helps users identify risks and improve patient safety.
+    </p>
 
     <input id="med1" placeholder="First medicine" onkeyup="suggest(1)">
     <div id="s1" class="suggestions"></div>
@@ -87,6 +93,11 @@ This system helps users identify risks and improve patient safety.
     <button onclick="check()">Check Interaction</button>
 
     <div class="result" id="result"></div>
+
+    <!-- Ethical warning -->
+    <div class="warning">
+        ⚠️ This tool is for educational purposes only. Consult a doctor.
+    </div>
 </div>
 
 <script>
@@ -125,7 +136,16 @@ function check(){
     })
     .then(res => res.json())
     .then(data => {
-        document.getElementById("result").innerText = data.result;
+        let resultBox = document.getElementById("result");
+
+        resultBox.innerText = data.result;
+
+        // 🔥 COLOR LOGIC ADDED
+        if(data.result.includes("⚠️")){
+            resultBox.style.color = "red";
+        } else {
+            resultBox.style.color = "green";
+        }
     });
 }
 </script>
